@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS   # ✅ NEW
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 import os
 import json
 from eth_account import Account
@@ -10,13 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # ✅ NEW: Allow cross-origin requests
+CORS(app)  # Allow cross-origin requests
 
 # ✅ Root route to verify backend health
 @app.route('/')
 def home():
     return "✅ Oracle Backend is running!"
-
 
 # Environment variables
 INFURA_URL = os.getenv("INFURA_URL")
@@ -36,13 +35,14 @@ contract = web3.eth.contract(
     abi=contract_abi
 )
 
-# ✅ FIX: use absolute path so Render always finds your JSON files
+# ✅ Use absolute path so Render always finds your JSON files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# ✅ Route 1: Serve DPP JSON filtered by access tier
 @app.route("/api/dpp/<panel_id>", methods=["GET"])
 def get_filtered_dpp(panel_id):
     access_level = request.args.get("access", "public").lower()
-    file_path = os.path.join(BASE_DIR, "pnels", f"{panel_id}.json")  # <-- fixed
+    file_path = os.path.join(BASE_DIR, "panels", f"{panel_id}.json")  # ✅ fixed folder name
 
     if not os.path.exists(file_path):
         return jsonify({"error": "Panel record not found."}), 404
@@ -55,7 +55,7 @@ def get_filtered_dpp(panel_id):
 
 
 def filter_dpp_for_user(dpp_json, user_role):
-    allowed_roles = ["Public"]  # match JSON capitalization
+    allowed_roles = ["Public"]
 
     if user_role == "tier1":
         allowed_roles.extend(["Public", "Tier 1"])
@@ -68,10 +68,10 @@ def filter_dpp_for_user(dpp_json, user_role):
             filtered[key] = section
     return filtered
 
-
+# ✅ Route 2: Return SHA3 hash for a given panel JSON
 @app.route("/api/hash/<panel_id>", methods=["GET"])
 def get_panel_hash(panel_id):
-    file_path = os.path.join(BASE_DIR, "pnels", f"{panel_id}.json")  # <-- fixed
+    file_path = os.path.join(BASE_DIR, "panels", f"{panel_id}.json")  # ✅ fixed folder name
 
     if not os.path.exists(file_path):
         return jsonify({"error": "Panel record not found."}), 404
@@ -82,6 +82,10 @@ def get_panel_hash(panel_id):
 
     return jsonify({"panel_id": panel_id, "sha3_hash": hash_hex})
 
+# ✅ Route 3: Directly serve JSON files (for frontend "Load DPP JSON" button)
+@app.route("/panels/<path:filename>")
+def serve_panel_file(filename):
+    return send_from_directory(os.path.join(BASE_DIR, "panels"), filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
