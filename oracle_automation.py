@@ -12,7 +12,7 @@ ORACLE_PRIVATE_KEY = "0fc530d3f88969a28bf0b9e935aee66e6c1294a2329c12826500cfb673
 ORACLE_ADDRESS = w3.eth.account.from_key(ORACLE_PRIVATE_KEY).address
 
 # Smart contract setup
-CONTRACT_ADDRESS = Web3.to_checksum_address("0xb8935eBEb1dA663C187fc9090b77E1972A909e12")
+CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
 CONTRACT_ABI = json.load(open("contract_abi.json"))  # Make sure ABI file is present
 contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
 
