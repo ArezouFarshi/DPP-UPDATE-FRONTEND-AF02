@@ -8,11 +8,9 @@ app = Flask(__name__)
 # Optional bearer authentication
 AUTH_TOKEN = os.getenv("AUTH_TOKEN")
 
-
 @app.get("/")
 def health():
     return "🟢 Oracle backend running!"
-
 
 @app.post("/anchor")
 def anchor():
@@ -24,9 +22,11 @@ def anchor():
                 return jsonify({"status": "error", "message": "Unauthorized"}), 401
 
         payload = request.get_json(force=True)
-        panel_id, event_type, tx_hash = process_and_anchor(
-            payload, event_type="installation"
-        )
+        panel_id = payload.get("panel_id")
+        event_type = payload.get("event_type")
+        event_data = payload.get("event_data")
+
+        tx_hash = process_and_anchor(panel_id, event_type, event_data)
 
         return jsonify({
             "status": "success",
@@ -37,12 +37,10 @@ def anchor():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
 # --- Access-tier filtering logic ---
 def filter_dpp_for_user(dpp_json, user_role):
     result = {}
     for section, fields in dpp_json.items():
-        # Handle both Access_Tier and access_tier just in case
         access = fields.get("Access_Tier", fields.get("access_tier", "")).lower()
         if "public" in access:
             result[section] = fields
@@ -52,10 +50,9 @@ def filter_dpp_for_user(dpp_json, user_role):
             result[section] = fields
     return result
 
-
 @app.get("/api/dpp/<panel_id>")
 def get_dpp(panel_id):
-    user_role = request.args.get("access", "public").lower()  # default = public
+    user_role = request.args.get("access", "public").lower()
     try:
         with open(f"panels/{panel_id}.json", "r", encoding="utf-8") as f:
             dpp_json = json.load(f)
@@ -66,7 +63,5 @@ def get_dpp(panel_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == "__main__":
-    # For local testing only; on Render use gunicorn
     app.run(host="0.0.0.0", port=5000)
