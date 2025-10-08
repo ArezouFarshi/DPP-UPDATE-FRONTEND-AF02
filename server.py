@@ -1,19 +1,22 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS   # ✅ NEW
 import os
 import json
 from eth_account import Account
 from web3 import Web3
 from dotenv import load_dotenv
 
-# Load environment variables from Render or .env file
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)  # ✅ NEW: Allow cross-origin requests
 
 # ✅ Root route to verify backend health
 @app.route('/')
 def home():
-    return "✅ Oracle Backend is running !"
+    return "✅ Oracle Backend is running!"
+
 
 # Environment variables
 INFURA_URL = os.getenv("INFURA_URL")
