@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+@app.route('/')
+def home():
+    return "✅ Oracle Backend is running and healthy!"
+
 
 INFURA_URL = os.getenv("INFURA_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
