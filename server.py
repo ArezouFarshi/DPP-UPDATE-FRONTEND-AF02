@@ -86,6 +86,39 @@ def get_panel_hash(panel_id):
 @app.route("/panels/<path:filename>")
 def serve_panel_file(filename):
     return send_from_directory(os.path.join(BASE_DIR, "panels"), filename)
+# --- EVENT LISTENER THREAD ---
+from threading import Thread
+import time
+
+def watch_contract_events():
+    print("👀 Watching for blockchain events...")
+    latest_block = web3.eth.block_number
+
+    while True:
+        try:
+            # Listen for recordFault events
+            events = contract.events.recordFault.get_logs(fromBlock=latest_block)
+            for evt in events:
+                args = evt["args"]
+                print("🔹 New event detected:", args)
+
+                panel_id = args.get("panelId")
+                event_type = args.get("eventType")
+                section_hash = args.get("sectionHash")
+
+                # Optional: call process_and_anchor to update JSON automatically
+                from oracle_automation import process_and_anchor
+                payload = {"panel_id": panel_id, "fault_data": {"section_hash": section_hash}}
+                process_and_anchor(payload, event_type)
+
+            latest_block = web3.eth.block_number
+        except Exception as e:
+            print("⚠️ Event listener error:", e)
+
+        time.sleep(10)  # Check every 10 seconds
+
+# Start background thread
+Thread(target=watch_contract_events, daemon=True).start()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
