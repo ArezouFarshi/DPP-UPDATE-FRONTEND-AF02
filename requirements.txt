@@ -1,4 +1,4 @@
-flask
+flask_cors
 web3
 eth-account
 hexbytes
