@@ -1,111 +1,73 @@
-﻿import os
 import json
-from typing import Dict, Tuple
+import os
+import datetime
 from web3 import Web3
-from eth_account import Account
-from hexbytes import HexBytes
 
-# Required environment variables (set in Render dashboard)
-INFURA_URL = os.getenv("INFURA_URL")
-CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
-ABI_PATH = os.getenv("ABI_PATH", "contract_abi.json")
-
-# Validate env
-missing = [k for k, v in {
-    "INFURA_URL": INFURA_URL,
-    "CONTRACT_ADDRESS": CONTRACT_ADDRESS,
-    "PRIVATE_KEY": PRIVATE_KEY
-}.items() if not v]
-if missing:
-    raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
-
-# Web3 setup
+# Connect to Infura
+INFURA_URL = "https://sepolia.infura.io/v3/57ea67cde27f45f9af5a69bdc5c92332"
 w3 = Web3(Web3.HTTPProvider(INFURA_URL))
-account = Account.from_key(PRIVATE_KEY)
 
-with open(ABI_PATH, "r", encoding="utf-8") as f:
-    contract_abi = json.load(f)
+# Wallet details (test only!)
+ORACLE_PRIVATE_KEY = "0fc530d3f88969a28bf0b9e935aee66e6c1294a2329c12826500cfb673a39f79"
+ORACLE_ADDRESS = w3.eth.account.from_key(ORACLE_PRIVATE_KEY).address
 
-contract = w3.eth.contract(
-    address=Web3.to_checksum_address(CONTRACT_ADDRESS),
-    abi=contract_abi
-)
+# Smart contract setup
+CONTRACT_ADDRESS = Web3.to_checksum_address("0xb8935eBEb1dA663C187fc9090b77E1972A909e12")
+CONTRACT_ABI = json.load(open("contract_abi.json"))  # Make sure ABI file is present
+contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
 
-def run_oracle_validations(panel_json: Dict) -> Dict:
-    """
-    Stub for your two-oracle pipeline.
-    Raise errors if validation fails. Return status dict if ok.
-    """
-    # TODO: replace with real validation logic (Trust Filter + Prediction Verifier)
-    return {"oracle_a_status": "ok", "oracle_b_status": "ok"}
+def process_and_anchor(payload, event_type):
+    panel_id = payload.get("panel_id")
+    fault_data = payload.get("fault_data")  # Dictionary with keys like fault_id, fault_type, etc.
 
-def deterministic_hash(obj: Dict) -> str:
-    """
-    Keccak-256 over canonical JSON (sorted keys, compact separators).
-    """
-    data = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return Web3.keccak(data).hex()
+    if not panel_id or not fault_data:
+        raise ValueError("Missing panel_id or fault_data")
 
-def build_event_payload(panel_json: Dict, event_type: str) -> Tuple[str, str]:
-    """
-    Extract panel_id and compute the event hash over the full updated DPP snapshot.
-    """
-    try:
-        panel_id = panel_json["Factory Registration"]["Panel_ID"]
-    except Exception:
-        raise ValueError("Panel_ID not found at Factory Registration.Panel_ID")
+    # --- Step 1: Load JSON file ---
+    panel_path = f"panels/{panel_id}.json"
+    if not os.path.exists(panel_path):
+        raise FileNotFoundError(f"Panel record not found: {panel_id}")
 
-    # Contract constraints
-    if not (0 < len(panel_id) <= 64):
-        raise ValueError("Invalid panelId length")
-    if not (0 < len(event_type) <= 32):
-        raise ValueError("Invalid eventType length")
+    with open(panel_path, "r", encoding="utf-8") as f:
+        panel_json = json.load(f)
 
-    # Optionally update lifecycle metadata inline (oracle wallet + anchor time)
-    panel_json.setdefault("Installation_Metadata", {})
-    panel_json["Installation_Metadata"]["oracle_wallet"] = account.address
-    # Use latest block timestamp for clear on-chain correlation
-    panel_json["Installation_Metadata"]["anchored_at"] = int(w3.eth.get_block("latest").timestamp)
+    # --- Step 2: Update the appropriate section ---
+    timestamp = datetime.datetime.utcnow().isoformat()
+    fault_data["resolution_timestamp"] = timestamp
 
-    # Hash the full payload snapshot (ID, event type, DPP JSON)
-    event_hash_hex = deterministic_hash({
-        "panel_id": panel_id,
-        "event_type": event_type,
-        "dpp": panel_json
+    if event_type == "installation":
+        section = "fault_log_installation"
+    elif event_type == "operation":
+        section = "fault_log_operation"
+    else:
+        raise ValueError("Invalid event_type: must be 'installation' or 'operation'")
+
+    for key, value in fault_data.items():
+        panel_json[section][key] = value
+
+    # --- Step 3: Save JSON ---
+    with open(panel_path, "w", encoding="utf-8") as f:
+        json.dump(panel_json, f, indent=2)
+
+    # --- Step 4: Hash the section ---
+    section_bytes = json.dumps(panel_json[section], sort_keys=True).encode("utf-8")
+    section_hash = Web3.keccak(section_bytes).hex()
+
+    # --- Step 5: Send to smart contract ---
+    nonce = w3.eth.get_transaction_count(ORACLE_ADDRESS)
+
+    tx = contract.functions.recordFault(
+        panel_id,
+        event_type,
+        section_hash
+    ).build_transaction({
+        'from': ORACLE_ADDRESS,
+        'nonce': nonce,
+        'gas': 300000,
+        'gasPrice': w3.to_wei('20', 'gwei')
     })
 
-    return panel_id, event_hash_hex
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=ORACLE_PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
-def anchor_event(panel_id: str, event_type: str, event_hash_hex: str) -> str:
-    """
-    Call addPanelEvent(panelId, eventType, eventHash) with EIP-1559 fields.
-    """
-    event_hash_bytes32 = HexBytes(event_hash_hex)
-
-    tx = contract.functions.addPanelEvent(panel_id, event_type, event_hash_bytes32).build_transaction({
-        "from": account.address,
-        "nonce": w3.eth.get_transaction_count(account.address),
-        "chainId": w3.eth.chain_id,
-        "maxFeePerGas": w3.to_wei("30", "gwei"),
-        "maxPriorityFeePerGas": w3.to_wei("2", "gwei"),
-        "gas": 250000,
-    })
-
-    signed = account.sign_transaction(tx)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
-    return receipt.transactionHash.hex()
-
-def process_and_anchor(panel_json: Dict, event_type: str = "installation") -> Tuple[str, str, str]:
-    """
-    Full pipeline: validations → build payload → anchor on-chain.
-    Returns (panel_id, event_type, tx_hash).
-    """
-    validations = run_oracle_validations(panel_json)
-    if validations.get("oracle_a_status") != "ok" or validations.get("oracle_b_status") != "ok":
-        raise RuntimeError("Oracle validation failed")
-
-    panel_id, event_hash_hex = build_event_payload(panel_json, event_type)
-    tx_hash = anchor_event(panel_id, event_type, event_hash_hex)
-    return panel_id, event_type, tx_hash
+    return panel_id, event_type, tx_hash.hex()
