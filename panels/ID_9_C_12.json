@@ -34,28 +34,6 @@
     "last_color_change": null,
     "Access_Tier": "Tier 1"
   },
-  "fault_log_installation": {
-    "fault_id": null,
-    "fault_type": null,
-    "fml_detected_issue": null,
-    "sensor_data_snapshot": null,
-    "fault_severity_level": null,
-    "action_taken": null,
-    "resolved": null,
-    "resolution_timestamp": null,
-    "event_hash": null,
-    "Access_Tier": "Tier 2"
-  },
-  "fault_log_operation": {
-    "fault_id": null,
-    "fault_type": null,
-    "fml_detected_issue": null,
-    "sensor_data_snapshot": null,
-    "fault_severity_level": null,
-    "action_taken": null,
-    "resolved": null,
-    "resolution_timestamp": null,
-    "event_hash": null,
-    "Access_Tier": "Tier 2"
-  }
+  "fault_log_installation": [],
+  "fault_log_operation": []
 }
