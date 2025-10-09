@@ -5,3 +5,5 @@ eth-account
 hexbytes
 gunicorn
 python-dotenv
+websockets
+requests
