@@ -1,41 +1,57 @@
+# server.py
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from web3 import Web3
-from threading import Thread
+from web3.middleware import geth_poa_middleware
 import os
 import json
-import time
 from dotenv import load_dotenv
-from oracle_automation import process_and_anchor  # Import helper
+from oracle_automation import process_and_anchor
 
-# ✅ Load environment variables
+# ---------------------------------------------------------
+# Load environment variables
+# ---------------------------------------------------------
 load_dotenv()
 
+# Infura Sepolia WebSocket endpoint (your project ID already known)
+INFURA_WS = "wss://sepolia.infura.io/ws/v3/57ea67cde27f45f9af5a69bdc5c92332"
+CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
+
+# ---------------------------------------------------------
+# Flask app setup
+# ---------------------------------------------------------
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Environment variables
-INFURA_URL = os.getenv("INFURA_URL", "https://sepolia.infura.io/v3/57ea67cde27f45f9af5a69bdc5c92332")
-CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
+# ---------------------------------------------------------
+# Web3 setup with WebSocket provider
+# ---------------------------------------------------------
+web3 = Web3(Web3.WebsocketProvider(INFURA_WS, websocket_timeout=30))
+web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-# ✅ Web3 setup
-web3 = Web3(Web3.HTTPProvider(INFURA_URL))
-
-# ✅ Load ABI
-with open("contract_abi.json") as f:
+# Load ABI (ensure file is named contract_abi.json in repo root)
+with open("contract_abi.json", "r", encoding="utf-8") as f:
     contract_abi = json.load(f)
 
-contract = web3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=contract_abi)
+contract = web3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
 
-# ✅ JSON panels directory
+# Panels directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PANELS_DIR = os.path.join(BASE_DIR, "panels")
 
-# -------------------- ROUTES --------------------
-
+# ---------------------------------------------------------
+# Routes
+# ---------------------------------------------------------
 @app.route("/")
 def home():
-    return "✅ Oracle Backend is running and watching blockchain events!"
+    return "✅ Oracle Backend is running and serving API routes!"
+
+@app.route("/health")
+def health():
+    try:
+        return {"ok": True, "latest_block": web3.eth.block_number}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 @app.route("/api/dpp/<panel_id>", methods=["GET"])
 def get_filtered_dpp(panel_id):
@@ -45,7 +61,7 @@ def get_filtered_dpp(panel_id):
     if not os.path.exists(file_path):
         return jsonify({"error": "Panel not found"}), 404
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     allowed_roles = ["Public"]
@@ -54,7 +70,7 @@ def get_filtered_dpp(panel_id):
     elif access_level == "tier2":
         allowed_roles += ["Tier 1", "Tier 2"]
 
-    filtered = {k: v for k, v in data.items() if v.get("Access_Tier") in allowed_roles}
+    filtered = {k: v for k, v in data.items() if isinstance(v, dict) and v.get("Access_Tier") in allowed_roles}
     return jsonify(filtered)
 
 @app.route("/api/hash/<panel_id>")
@@ -70,42 +86,9 @@ def get_hash(panel_id):
 def serve_panel(filename):
     return send_from_directory(PANELS_DIR, filename)
 
-# -------------------- EVENT LISTENER --------------------
-
-def listen_for_events():
-    print("👂 Listening for PanelEventAdded events in real time...")
-    event_filter = contract.events.PanelEventAdded.create_filter(fromBlock="latest")
-
-    while True:
-        try:
-            for event in event_filter.get_new_entries():
-                args = event["args"]
-                panel_id = args["panelId"]
-                event_type = args["eventType"]
-                fault_type = args["faultType"]
-                fault_severity = args["faultSeverity"]
-                action_taken = args["actionTaken"]
-                event_hash = args["eventHash"].hex()
-
-                print(f"🔹 New Event → {panel_id} | {event_type} | {fault_type}")
-
-                # Call update helper
-                process_and_anchor(
-                    panel_id=panel_id,
-                    event_type=event_type,
-                    fault_type=fault_type,
-                    fault_severity=fault_severity,
-                    action_taken=action_taken,
-                    event_hash=event_hash
-                )
-
-        except Exception as e:
-            print("⚠️ Error in event listener:", e)
-
-        time.sleep(10)
-
-# ✅ Start background thread
-Thread(target=listen_for_events, daemon=True).start()
-
+# ---------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------
 if __name__ == "__main__":
+    # Only run Flask here; event listening is handled by worker.py
     app.run(host="0.0.0.0", port=5000)
