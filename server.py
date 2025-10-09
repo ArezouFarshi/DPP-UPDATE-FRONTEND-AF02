@@ -102,9 +102,13 @@ def watch_contract_events():
                 args = evt["args"]
                 print("🔹 New event detected:", args)
 
-                panel_id = args.get("panelId")
-                event_type = args.get("eventType")
-                section_hash = args.get("sectionHash")
+panel_id = args.get("panelId")
+event_type = args.get("eventType")
+fault_type = args.get("faultType")
+fault_severity = args.get("faultSeverity")
+action_taken = args.get("actionTaken")
+event_hash = args.get("eventHash")
+
 
                 # Optional: call process_and_anchor to update JSON automatically
                 from oracle_automation import process_and_anchor
