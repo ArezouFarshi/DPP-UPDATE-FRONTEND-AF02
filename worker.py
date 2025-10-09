@@ -8,8 +8,8 @@ load_dotenv()
 INFURA_WS = "wss://sepolia.infura.io/ws/v3/57ea67cde27f45f9af5a69bdc5c92332"
 CONTRACT_ADDRESS = "0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7"
 
-# ✅ FIX: use WebSocketProvider (capital S)
-web3 = Web3(Web3.WebSocketProvider(INFURA_WS, websocket_timeout=30))
+# ✅ FIX: use LegacyWebSocketProvider
+web3 = Web3(Web3.LegacyWebSocketProvider(INFURA_WS, websocket_timeout=30))
 
 with open("contract_abi.json", "r", encoding="utf-8") as f:
     contract_abi = json.load(f)
