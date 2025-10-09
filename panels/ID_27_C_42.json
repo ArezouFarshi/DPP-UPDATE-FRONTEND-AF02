@@ -43,7 +43,7 @@
     "action_taken": null,
     "resolved": null,
     "resolution_timestamp": null,
-    "hash_of_install_fault_record": null,
+    "event_hash": null,
     "Access_Tier": "Tier 2"
   },
   "fault_log_operation": {
@@ -55,7 +55,7 @@
     "action_taken": null,
     "resolved": null,
     "resolution_timestamp": null,
-    "hash_of_fault": null,
+    "event_hash": null,
     "Access_Tier": "Tier 2"
   }
 }
