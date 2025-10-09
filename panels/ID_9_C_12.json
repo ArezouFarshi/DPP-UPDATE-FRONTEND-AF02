@@ -4,13 +4,13 @@
     "manufacturer_name": "Focchi SpA",
     "manufacture_date": "2025-05-12",
     "material_composition": "6mm ESG + 16 Ar + 6mm ESG",
-    "declared_performance": "U=1.1 W/m²K, REI 30, dB=625",
+    "declared_performance": "U=1.1 W/m²K, REI 30, dB=1487",
     "width_mm": 1500,
     "height_mm": 3200,
     "depth_mm": 200,
     "panel_weight_kg": 185.2,
     "epd_carbon_footprint": "92.5 kg CO2",
-    "nfc_tag_id": "NFC-A2A-ID_9_C_12",
+    "nfc_tag_id": "NFC-A2A-ID_27_C_42",
     "blockchain_record_hash": null,
     "Access_Tier": "Public"
   },
@@ -43,7 +43,7 @@
     "action_taken": null,
     "resolved": null,
     "resolution_timestamp": null,
-    "hash_of_install_fault_record": null,
+    "event_hash": null,
     "Access_Tier": "Tier 2"
   },
   "fault_log_operation": {
@@ -55,7 +55,7 @@
     "action_taken": null,
     "resolved": null,
     "resolution_timestamp": null,
-    "hash_of_fault": null,
+    "event_hash": null,
     "Access_Tier": "Tier 2"
   }
 }
