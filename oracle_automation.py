@@ -1,13 +1,14 @@
 import json
 import os
 import datetime
+import time
 from web3 import Web3
 
 # ✅ Step 1: Connect to Infura
 INFURA_URL = "https://sepolia.infura.io/v3/57ea67cde27f45f9af5a69bdc5c92332"
 w3 = Web3(Web3.HTTPProvider(INFURA_URL))
 
-# ✅ Step 2: Oracle Wallet (TEST ONLY — replace for production)
+# ✅ Step 2: Oracle Wallet (TEST ONLY)
 ORACLE_PRIVATE_KEY = "0fc530d3f88969a28bf0b9e935aee66e6c1294a2329c12826500cfb673a39f79"
 ORACLE_ADDRESS = w3.eth.account.from_key(ORACLE_PRIVATE_KEY).address
 
@@ -20,6 +21,10 @@ contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PANELS_DIR = os.path.join(BASE_DIR, "panels")
 
+
+# =====================================================
+# FUNCTION: process_and_anchor
+# =====================================================
 def process_and_anchor(payload, event_type):
     """
     Updates the panel's JSON record with fault or event data,
@@ -31,7 +36,6 @@ def process_and_anchor(payload, event_type):
     if not panel_id or not fault_data:
         raise ValueError("Missing panel_id or fault_data")
 
-    # --- Step 1: Locate and load JSON file ---
     panel_path = os.path.join(PANELS_DIR, f"{panel_id}.json")
     if not os.path.exists(panel_path):
         raise FileNotFoundError(f"Panel record not found: {panel_id}")
@@ -43,9 +47,9 @@ def process_and_anchor(payload, event_type):
     timestamp = datetime.datetime.utcnow().isoformat()
     fault_data["resolution_timestamp"] = timestamp
 
-    if event_type == "installation":
+    if event_type.lower() == "installation":
         section = "fault_log_installation"
-    elif event_type == "operation":
+    elif event_type.lower() == "operation":
         section = "fault_log_operation"
     else:
         raise ValueError("Invalid event_type: must be 'installation' or 'operation'")
@@ -57,13 +61,11 @@ def process_and_anchor(payload, event_type):
     with open(panel_path, "w", encoding="utf-8") as f:
         json.dump(panel_json, f, indent=2)
 
-    # --- Step 4: Compute hash of updated section ---
+    # --- Step 4: Compute hash and anchor ---
     section_bytes = json.dumps(panel_json[section], sort_keys=True).encode("utf-8")
     section_hash = Web3.keccak(section_bytes).hex()
 
-    # --- Step 5: Record on blockchain ---
     nonce = w3.eth.get_transaction_count(ORACLE_ADDRESS)
-
     tx = contract.functions.recordFault(
         panel_id,
         event_type,
@@ -80,3 +82,40 @@ def process_and_anchor(payload, event_type):
 
     print(f"✅ Anchored {panel_id} ({event_type}) → {tx_hash.hex()}")
     return panel_id, event_type, tx_hash.hex()
+
+
+# =====================================================
+# OPTIONAL: LISTENER (for standalone runs)
+# =====================================================
+def handle_event(event):
+    args = event["args"]
+    payload = {
+        "panel_id": args["panelId"],
+        "fault_data": {
+            "fault_id": args["faultType"],
+            "fault_type": args["faultType"],
+            "fault_severity_level": args["faultSeverity"],
+            "action_taken": args["actionTaken"],
+            "event_hash": args["eventHash"]
+        }
+    }
+    process_and_anchor(payload, args["eventType"])
+
+
+def watch_events():
+    print("👂 Listening for PanelEventAdded events...")
+    event_filter = contract.events.PanelEventAdded.create_filter(fromBlock="latest")
+
+    while True:
+        try:
+            for event in event_filter.get_new_entries():
+                print("🔹 New event detected:", event["args"])
+                handle_event(event)
+        except Exception as e:
+            print("⚠️ Event listener error:", e)
+        time.sleep(10)
+
+
+# Run listener manually if script executed directly
+if __name__ == "__main__":
+    watch_events()
