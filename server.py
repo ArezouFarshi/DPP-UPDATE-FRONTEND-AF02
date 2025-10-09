@@ -13,8 +13,8 @@ CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923e
 app = Flask(__name__)
 CORS(app)
 
-# ✅ FIX: use WebSocketProvider (capital S)
-web3 = Web3(Web3.WebSocketProvider(INFURA_WS, websocket_timeout=30))
+# ✅ FIX: use LegacyWebSocketProvider
+web3 = Web3(Web3.LegacyWebSocketProvider(INFURA_WS, websocket_timeout=30))
 
 with open("contract_abi.json", "r", encoding="utf-8") as f:
     contract_abi = json.load(f)
