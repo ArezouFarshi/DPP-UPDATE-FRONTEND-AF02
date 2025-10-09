@@ -2,7 +2,6 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 import os
 import json
 from dotenv import load_dotenv
@@ -13,7 +12,6 @@ from oracle_automation import process_and_anchor
 # ---------------------------------------------------------
 load_dotenv()
 
-# Infura Sepolia WebSocket endpoint (your project ID already known)
 INFURA_WS = "wss://sepolia.infura.io/ws/v3/57ea67cde27f45f9af5a69bdc5c92332"
 CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
 
@@ -24,10 +22,9 @@ app = Flask(__name__)
 CORS(app)
 
 # ---------------------------------------------------------
-# Web3 setup with WebSocket provider
+# Web3 setup with WebSocket provider (no POA middleware)
 # ---------------------------------------------------------
 web3 = Web3(Web3.WebsocketProvider(INFURA_WS, websocket_timeout=30))
-web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 # Load ABI (ensure file is named contract_abi.json in repo root)
 with open("contract_abi.json", "r", encoding="utf-8") as f:
@@ -90,5 +87,4 @@ def serve_panel(filename):
 # Entry point
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    # Only run Flask here; event listening is handled by worker.py
     app.run(host="0.0.0.0", port=5000)
