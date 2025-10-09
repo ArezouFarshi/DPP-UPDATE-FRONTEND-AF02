@@ -35,8 +35,9 @@ def process_and_anchor(panel_id, event_type, fault_type, fault_severity, action_
     # Ensure section exists as a list
     if section not in panel_json or not isinstance(panel_json[section], list):
         panel_json[section] = []
-        # Debug: show exactly where it’s writing
-print("Writing to:", path)
+
+    # Debug: show exactly where it’s writing
+    print("Writing to:", path)
 
     # Append new event
     panel_json[section].append(event_data)
