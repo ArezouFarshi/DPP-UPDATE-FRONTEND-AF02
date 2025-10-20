@@ -1,10 +1,12 @@
 import os, json
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PANELS_DIR = os.path.join(BASE_DIR, "panels")
+
 def process_and_anchor(panel_id, event_type, fault_type, fault_severity,
                        action_taken, event_hash, validated_by, timestamp):
-    file_path = os.path.join("panels", f"{panel_id}.json")
+    file_path = os.path.join(PANELS_DIR, f"{panel_id}.json")
 
-    # Auto-create file if missing
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump({
@@ -28,7 +30,6 @@ def process_and_anchor(panel_id, event_type, fault_type, fault_severity,
         "timestamp": timestamp
     }
 
-    # Choose correct section
     section = "fault_log_installation" if event_type.lower() == "installation" else "fault_log_operation"
     data[section].append(new_event)
 
