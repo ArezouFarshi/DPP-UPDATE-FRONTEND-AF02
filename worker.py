@@ -1,6 +1,5 @@
 import os, json, time
 from web3 import Web3
-from web3.providers.websocket import WebSocketProvider 
 from dotenv import load_dotenv
 from oracle_automation import process_and_anchor
 
@@ -11,9 +10,8 @@ INFURA_WS = "wss://sepolia.infura.io/ws/v3/57ea67cde27f45f9af5a69bdc5c92332"
 CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
 WALLET_ADDRESS = "0xb8935eBEb1dA663C187fc9090b77E1972A909e12"
 
-# ✅ Correct Web3 v7 provider
-from web3.providers.websocket import WebSocketProvider
-web3 = Web3(WebSocketProvider(INFURA_WS, websocket_timeout=30))
+# ✅ Correct Web3 v7 provider: LegacyWebSocketProvider
+web3 = Web3(Web3.LegacyWebSocketProvider(INFURA_WS, websocket_timeout=30))
 
 # --- Load ABI ---
 with open("contract_abi.json", "r", encoding="utf-8") as f:
