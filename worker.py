@@ -10,7 +10,8 @@ INFURA_WS = "wss://sepolia.infura.io/ws/v3/57ea67cde27f45f9af5a69bdc5c92332"
 CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
 WALLET_ADDRESS = "0xb8935eBEb1dA663C187fc9090b77E1972A909e12"
 
-web3 = Web3(Web3.LegacyWebSocketProvider(INFURA_WS, websocket_timeout=30))
+# Web3 v7: LegacyWebSocketProvider still works, but you can also use WebsocketProvider
+web3 = Web3(Web3.WebsocketProvider(INFURA_WS, websocket_timeout=30))
 
 with open("contract_abi.json", "r", encoding="utf-8") as f:
     contract_abi = json.load(f)
@@ -19,6 +20,7 @@ contract = web3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
 
 def listen_for_events():
     print("👂 Worker listening for PanelEventAdded events in real time...")
+    # ✅ Web3 v7 syntax
     event_filter = contract.events.PanelEventAdded.create_filter(from_block=0)
 
     while True:
