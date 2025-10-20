@@ -3,23 +3,19 @@ from flask_cors import CORS
 from web3 import Web3
 import os, json
 from dotenv import load_dotenv
-from oracle_automation import process_and_anchor
 
-# Load environment variables
 load_dotenv()
 
-# --- Blockchain connection ---
-INFURA_HTTP = os.getenv("WEB3_HTTP_URI", "https://sepolia.infura.io/v3/<your_project_id>")
+# Real Sepolia HTTP endpoint and addresses
+INFURA_HTTP = "https://sepolia.infura.io/v3/57ea67cde27f45f9af5a69bdc5c92332"
 CONTRACT_ADDRESS = Web3.to_checksum_address("0x59B649856d8c5Fb6991d30a345f0b923eA91a3f7")
+WALLET_ADDRESS = "0xb8935eBEb1dA663C187fc9090b77E1972A909e12"
 
-# Flask app setup
 app = Flask(__name__)
 CORS(app)
 
-# Web3 setup (HTTP provider is enough for API queries)
 web3 = Web3(Web3.HTTPProvider(INFURA_HTTP))
 
-# Load contract ABI
 try:
     with open("contract_abi.json", "r", encoding="utf-8") as f:
         contract_abi = json.load(f)
@@ -28,11 +24,8 @@ except FileNotFoundError:
     contract = None
     print("⚠️ ABI file not found. Contract functions may be unavailable.")
 
-# Panels directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PANELS_DIR = os.path.join(BASE_DIR, "panels")
-
-# --- Routes ---
 
 @app.route("/")
 def home():
@@ -41,50 +34,38 @@ def home():
 @app.route("/health")
 def health():
     try:
-        return {"ok": True, "latest_block": web3.eth.block_number}
+        return {"ok": True, "latest_block": web3.eth.block_number, "wallet": WALLET_ADDRESS}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 @app.route("/api/dpp/<panel_id>", methods=["GET"])
 def get_filtered_dpp(panel_id):
-    """Return filtered panel JSON based on access tier."""
     access_level = request.args.get("access", "public").lower()
     file_path = os.path.join(PANELS_DIR, f"{panel_id}.json")
-
     if not os.path.exists(file_path):
         return jsonify({"error": "Panel not found"}), 404
-
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-
     allowed_roles = ["Public"]
     if access_level == "tier1":
         allowed_roles += ["Tier 1"]
     elif access_level == "tier2":
         allowed_roles += ["Tier 1", "Tier 2"]
-
-    filtered = {
-        k: v for k, v in data.items()
-        if isinstance(v, dict) and v.get("Access_Tier") in allowed_roles
-    }
+    filtered = {k: v for k, v in data.items() if isinstance(v, dict) and v.get("Access_Tier") in allowed_roles}
     return jsonify(filtered)
 
 @app.route("/api/hash/<panel_id>")
 def get_hash(panel_id):
-    """Return SHA3 hash of a panel JSON file."""
     file_path = os.path.join(PANELS_DIR, f"{panel_id}.json")
     if not os.path.exists(file_path):
         return jsonify({"error": "File not found"}), 404
-
     with open(file_path, "rb") as f:
         h = web3.keccak(f.read()).hex()
     return jsonify({"panel_id": panel_id, "sha3_hash": h})
 
 @app.route("/panels/<path:filename>")
 def serve_panel(filename):
-    """Serve raw JSON file from panels directory."""
     return send_from_directory(PANELS_DIR, filename)
 
-# --- Main entrypoint ---
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
