@@ -22,7 +22,7 @@ contract = web3.eth.contract(
 def listen_for_events():
     print("👂 Worker listening for PanelEventAdded events in real time...")
     # For testing, catch all past events too
-    event_filter = contract.events.PanelEventAdded.create_filter(fromBlock=0)
+    event_filter = contract.events.PanelEventAdded.create_filter(from_block=0)
 
     while True:
         try:
