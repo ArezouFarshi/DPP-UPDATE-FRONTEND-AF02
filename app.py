@@ -3,42 +3,53 @@ import json
 import time
 from typing import Dict, Any, List
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from web3 import Web3
 from eth_account import Account
 
 # -------------------------------------------------------------------
-# Configuration (all sensitive values from environment variables)
+# Configuration (from environment variables)
 # -------------------------------------------------------------------
-INFURA_URL = os.getenv("INFURA_URL")              # Infura RPC endpoint
-CONTRACT_ADDRESS = Web3.to_checksum_address(os.getenv("CONTRACT_ADDRESS"))
+INFURA_URL = os.getenv("INFURA_URL")              # e.g. https://sepolia.infura.io/v3/xxxx
+CONTRACT_ADDRESS_ENV = os.getenv("CONTRACT_ADDRESS")
 ABI_PATH = os.getenv("ABI_PATH", "contract_abi.json")
 PANELS_DIR = os.getenv("PANELS_DIR", "panels")
 CHAIN_ID = int(os.getenv("CHAIN_ID", "11155111")) # Sepolia default
 
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")            # Oracle private key
-ORACLE_ADDRESS = os.getenv("ORACLE_ADDRESS")      # Oracle public address
-ADMIN_ADDRESS = os.getenv("ADMIN_ADDRESS")        # Contract owner address
+PRIVATE_KEY = os.getenv("PRIVATE_KEY")            # Only needed if you sign TXs
+ORACLE_ADDRESS = os.getenv("ORACLE_ADDRESS")
+ADMIN_ADDRESS = os.getenv("ADMIN_ADDRESS")
+
+if not INFURA_URL:
+    raise RuntimeError("INFURA_URL is not set")
+if not CONTRACT_ADDRESS_ENV:
+    raise RuntimeError("CONTRACT_ADDRESS is not set")
+
+CONTRACT_ADDRESS = Web3.to_checksum_address(CONTRACT_ADDRESS_ENV)
 
 # -------------------------------------------------------------------
 # Web3 setup
 # -------------------------------------------------------------------
 w3 = Web3(Web3.HTTPProvider(INFURA_URL))
 if not w3.is_connected():
-    raise RuntimeError("❌ Web3 not connected to RPC")
+    raise RuntimeError("Web3 not connected to RPC")
 
 with open(ABI_PATH, "r", encoding="utf-8") as f:
     CONTRACT_ABI = json.load(f)
 
 contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
 
-# Account object from private key (used if signing transactions)
-account = Account.from_key(PRIVATE_KEY)
-print(f"🔑 Oracle account loaded: {account.address}")
+# Account object (optional)
+if PRIVATE_KEY:
+    account = Account.from_key(PRIVATE_KEY)
+    print(f"Oracle account loaded: {account.address}")
 
 # -------------------------------------------------------------------
-# Flask app
+# Flask app with CORS
 # -------------------------------------------------------------------
 app = Flask(__name__)
+# Allow your deployed frontend domain; use CORS(app) to allow all if you prefer
+CORS(app, resources={r"/api/*": {"origins": "https://frontend-dashboard-af-01.onrender.com"}})
 
 # -------------------------------------------------------------------
 # Helpers
@@ -84,10 +95,8 @@ def fetch_events_for_panel(panel_id: str) -> List[Dict[str, Any]]:
     return events
 
 def merge_events_into_dpp(dpp: Dict[str, Any], events: List[Dict[str, Any]]) -> Dict[str, Any]:
-    if "fault_log_installation" not in dpp:
-        dpp["fault_log_installation"] = []
-    if "fault_log_operation" not in dpp:
-        dpp["fault_log_operation"] = []
+    dpp.setdefault("fault_log_installation", [])
+    dpp.setdefault("fault_log_operation", [])
     if "digital_twin_status" in dpp and events:
         latest = events[-1]
         dpp["digital_twin_status"]["current_visual_status"] = latest["status"]
@@ -121,6 +130,11 @@ def get_dpp(panel_id: str):
         dpp.setdefault("_warnings", []).append(f"Blockchain events not merged: {str(e)}")
     filtered = filter_by_access(dpp, access)
     return jsonify({"panel_id": panel_id, "access": access, "data": filtered})
+
+# Health check (optional, useful for Render)
+@app.get("/health")
+def health():
+    return {"status": "ok"}, 200
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
