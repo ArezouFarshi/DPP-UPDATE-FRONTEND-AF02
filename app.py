@@ -70,13 +70,22 @@ def filter_by_access(dpp: Dict[str, Any], access: str) -> Dict[str, Any]:
     }
     tiers = allowed.get(access, {"Public"})
     filtered = {}
+
     for key, value in dpp.items():
         if isinstance(value, dict) and "Access_Tier" in value:
             if value.get("Access_Tier") in tiers:
                 filtered[key] = value
+            elif key == "installation_metadata" and access == "public":
+                # ✅ Special case: always keep tower_name and location for Public
+                filtered[key] = {
+                    "tower_name": value.get("tower_name"),
+                    "location": value.get("location"),
+                    "Access_Tier": "Public"
+                }
         elif key in ("fault_log_installation", "fault_log_operation"):
             if "Tier 2" in tiers:
                 filtered[key] = value
+
     return filtered
 
 def fetch_events_for_panel(panel_id: str) -> List[Dict[str, Any]]:
