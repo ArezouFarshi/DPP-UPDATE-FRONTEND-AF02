@@ -14,6 +14,15 @@
     "blockchain_record_hash": null,
     "Access_Tier": "Public"
   },
+  "sustainability_declaration": {
+    "carbon_footprint": "92.5 kg CO2",
+    "primary_energy_demand": "150 MJ (60% renewable)",
+    "water_consumption": "12 liters",
+    "waste_generated": "1.2 kg non-hazardous",
+    "resource_depletion": "0.05 kg Sb eq",
+    "recyclability": "85% recyclable materials",
+    "certifications": ["ISO 14025", "EPD verified"]
+  },
   "installation_metadata": {
     "tower_name": "Torre Faro (A2A)",
     "latitude": 45.50647,
