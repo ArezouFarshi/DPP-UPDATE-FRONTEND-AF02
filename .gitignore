@@ -1,3 +1,22 @@
+# Environment & secrets
 .env
+*.env
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+
+# Virtual environments
+venv/
+env/
+
+# Logs
+*.log
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Render/Heroku build artifacts
+*.sqlite3
