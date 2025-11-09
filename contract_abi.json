@@ -7,29 +7,34 @@
 				"type": "string"
 			},
 			{
+				"internalType": "bool",
+				"name": "ok",
+				"type": "bool"
+			},
+			{
 				"internalType": "string",
-				"name": "eventType",
+				"name": "color",
 				"type": "string"
 			},
 			{
 				"internalType": "string",
-				"name": "faultType",
+				"name": "status",
 				"type": "string"
+			},
+			{
+				"internalType": "int256",
+				"name": "prediction",
+				"type": "int256"
 			},
 			{
 				"internalType": "string",
-				"name": "faultSeverity",
+				"name": "reason",
 				"type": "string"
 			},
 			{
-				"internalType": "string",
-				"name": "actionTaken",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "eventHash",
-				"type": "bytes32"
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
 			}
 		],
 		"name": "addPanelEvent",
@@ -41,44 +46,25 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_oracleFinal",
+				"name": "_oracle",
+				"type": "address"
+			}
+		],
+		"name": "setOracle",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_oracle",
 				"type": "address"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "oldAdmin",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "newAdmin",
-				"type": "address"
-			}
-		],
-		"name": "AdminChanged",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newAdmin",
-				"type": "address"
-			}
-		],
-		"name": "changeAdmin",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -91,39 +77,33 @@
 			},
 			{
 				"indexed": false,
+				"internalType": "bool",
+				"name": "ok",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
 				"internalType": "string",
-				"name": "eventType",
+				"name": "color",
 				"type": "string"
 			},
 			{
 				"indexed": false,
 				"internalType": "string",
-				"name": "faultType",
+				"name": "status",
 				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "int256",
+				"name": "prediction",
+				"type": "int256"
 			},
 			{
 				"indexed": false,
 				"internalType": "string",
-				"name": "faultSeverity",
+				"name": "reason",
 				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "actionTaken",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "eventHash",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "validatedBy",
-				"type": "address"
 			},
 			{
 				"indexed": false,
@@ -136,46 +116,52 @@
 		"type": "event"
 	},
 	{
-		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
 				"internalType": "string",
 				"name": "panelId",
 				"type": "string"
 			},
 			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "factoryHash",
-				"type": "bytes32"
+				"internalType": "uint256",
+				"name": "index",
+				"type": "uint256"
+			}
+		],
+		"name": "getEventAt",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "ok",
+				"type": "bool"
 			},
 			{
-				"indexed": false,
+				"internalType": "string",
+				"name": "color",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "status",
+				"type": "string"
+			},
+			{
+				"internalType": "int256",
+				"name": "prediction",
+				"type": "int256"
+			},
+			{
+				"internalType": "string",
+				"name": "reason",
+				"type": "string"
+			},
+			{
 				"internalType": "uint256",
 				"name": "timestamp",
 				"type": "uint256"
 			}
 		],
-		"name": "PanelRegistered",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "panelId",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "factoryHash",
-				"type": "bytes32"
-			}
-		],
-		"name": "registerPanel",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -198,149 +184,12 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "panelId",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "index",
-				"type": "uint256"
-			}
-		],
-		"name": "getPanelEvent",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "eventType",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "faultType",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "faultSeverity",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "actionTaken",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "eventHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "validatedBy",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "oracleFinal",
+		"name": "oracle",
 		"outputs": [
 			{
 				"internalType": "address",
 				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "panelEvents",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "eventType",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "faultType",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "faultSeverity",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "actionTaken",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "eventHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "validatedBy",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"name": "panels",
-		"outputs": [
-			{
-				"internalType": "bytes32",
-				"name": "factoryHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "registeredBy",
 				"type": "address"
 			}
 		],
@@ -349,7 +198,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "platformAdmin",
+		"name": "owner",
 		"outputs": [
 			{
 				"internalType": "address",
