@@ -49,9 +49,9 @@ if PRIVATE_KEY:
 # -------------------------------------------------------------------
 app = Flask(__name__)
 
-# Allow your deployed frontend domains
+# Allow all routes, but only from your two frontend domains
 CORS(app, resources={
-    r"/app/*": {
+    r"/*": {
         "origins": [
             "https://www.blockchain-powered-dpp-af.com",
             "https://www.blockchain-powered-dpp-af.it"
