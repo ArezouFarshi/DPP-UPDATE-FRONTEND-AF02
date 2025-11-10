@@ -49,9 +49,9 @@ if PRIVATE_KEY:
 # -------------------------------------------------------------------
 app = Flask(__name__)
 
-# Allow all routes, but only from your two frontend domains
+# Allow your deployed frontend domains
 CORS(app, resources={
-    r"/*": {
+    r"/api/*": {
         "origins": [
             "https://www.blockchain-powered-dpp-af.com",
             "https://www.blockchain-powered-dpp-af.it"
@@ -91,8 +91,8 @@ def filter_by_access(dpp: Dict[str, Any], access: str) -> Dict[str, Any]:
                     "Access_Tier": "Public"
                 }
         elif key in ("fault_log_installation", "fault_log_operation"):
-            # ✅ Always include logs if they exist, but filter later
-            filtered[key] = value
+            if "Tier 2" in tiers:
+                filtered[key] = value
 
     return filtered
 
@@ -126,13 +126,14 @@ def merge_events_into_dpp(dpp: Dict[str, Any], events: List[Dict[str, Any]]) -> 
             "prediction": evt["prediction"],
             "reason": evt["reason"]
         }
-        dpp["fault_log_operation"].append(entry)
+        if evt["prediction"] in (1, 2, -1):
+            dpp["fault_log_operation"].append(entry)
     return dpp
 
 # -------------------------------------------------------------------
 # Routes
 # -------------------------------------------------------------------
-@app.get("/app/<panel_id>")
+@app.get("/api/dpp/<panel_id>")
 def get_dpp(panel_id: str):
     access = request.args.get("access", "public").lower()
     try:
@@ -147,7 +148,7 @@ def get_dpp(panel_id: str):
     filtered = filter_by_access(dpp, access)
     return jsonify({"panel_id": panel_id, "access": access, "data": filtered})
 
-# Health check
+# Health check (optional, useful for Render)
 @app.get("/health")
 def health():
     return {"status": "ok"}, 200
@@ -155,3 +156,4 @@ def health():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
