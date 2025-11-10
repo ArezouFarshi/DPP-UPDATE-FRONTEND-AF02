@@ -48,8 +48,16 @@ if PRIVATE_KEY:
 # Flask app with CORS
 # -------------------------------------------------------------------
 app = Flask(__name__)
-# Allow your deployed frontend domain; use CORS(app) to allow all if you prefer
-CORS(app, resources={r"/api/*": {"origins": "https://frontend-dashboard-af-01.onrender.com"}})
+
+# Allow your deployed frontend domains
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://www.blockchain-powered-dpp-af.com",
+            "https://www.blockchain-powered-dpp-af.it"
+        ]
+    }
+})
 
 # -------------------------------------------------------------------
 # Helpers
